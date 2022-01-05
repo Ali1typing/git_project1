@@ -1,10 +1,11 @@
 import pygame
 
-WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = 480, 480
+WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = 640, 640
 FPS = 15
 MAPS_DIR = "maps"
 TILE_SIZE = 32
-ENEMY_EVENT_TYPE = 30
+ENEMY_EVENT_TYPE = 40
+TIME_TO_SPAWN = 2500
 
 
 class Labyrinth:
@@ -16,6 +17,7 @@ class Labyrinth:
                 self.map.append(list(map(int, line.split())))
         self.height = len(self.map)
         self.width = len(self.map[0])
+        print(self.height)
         self.tile_size = TILE_SIZE
         self.free_tiles = free_tiles
         self.finish_tile = finish_tile
@@ -57,7 +59,6 @@ class Labyrinth:
         return x, y
 
 
-
 class Enemy:
 
     def __init__(self, position):
@@ -97,12 +98,16 @@ class Game:
     def __init__(self, labyrinth, hero, enemy):
         self.labyrinth = labyrinth
         self.hero = hero
-        self.enemy = enemy
+        self.enemy_1 = enemy
+        self.enemy_2 = Enemy((1, 18))
+        self.enemy_3 = Enemy((2, 1))
 
     def render(self, screen):
         self.labyrinth.render(screen)
         self.hero.render(screen)
-        self.enemy.render(screen)
+        self.enemy_1.render(screen)
+        self.enemy_2.render(screen)
+        self.enemy_3.render(screen)
 
     def update_hero(self):
         next_x, next_y = self.hero.get_position()
@@ -117,15 +122,29 @@ class Game:
         if self.labyrinth.is_free((next_x, next_y)):
             self.hero.set_position((next_x, next_y))
 
-    def move_enemy(self):
-        next_position = self.labyrinth.find_path_step(self.enemy.get_position(), self.hero.get_position())
-        self.enemy.set_position(next_position)
+    def move_enemy_1(self):
+        next_position = self.labyrinth.find_path_step(self.enemy_1.get_position(), self.hero.get_position())
+        self.enemy_1.set_position(next_position)
+
+    def move_enemy_2(self):
+        next_position = self.labyrinth.find_path_step(self.enemy_2.get_position(), self.hero.get_position())
+        self.enemy_2.set_position(next_position)
+
+    def move_enemy_3(self):
+        next_position = self.labyrinth.find_path_step(self.enemy_3.get_position(), self.hero.get_position())
+        self.enemy_3.set_position(next_position)
+
 
     def check_win(self):
         return self.labyrinth.get_tile_id(self.hero.get_position()) == self.labyrinth.finish_tile
 
     def check_lose(self):
-        return self.hero.get_position() == self.enemy.get_position()
+        if self.hero.get_position() == self.enemy_1.get_position():
+            return self.hero.get_position() == self.enemy_1.get_position()
+        if self.hero.get_position() == self.enemy_2.get_position():
+            return self.hero.get_position() == self.enemy_2.get_position()
+        if self.hero.get_position() == self.enemy_3.get_position():
+            return self.hero.get_position() == self.enemy_3.get_position()
 
 
 def show_message(screen, message):
@@ -158,7 +177,13 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == ENEMY_EVENT_TYPE and not game_over:
-                game.move_enemy()
+                game.move_enemy_1()
+            if event.type == ENEMY_EVENT_TYPE and not game_over\
+                    and TIME_TO_SPAWN < pygame.time.get_ticks():
+                game.move_enemy_2()
+            if event.type == ENEMY_EVENT_TYPE and not game_over\
+                    and TIME_TO_SPAWN * 2 < pygame.time.get_ticks():
+                game.move_enemy_3()
         if not game_over:
             game.update_hero()
         screen.fill((0, 0, 0))
