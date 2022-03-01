@@ -1,36 +1,33 @@
 import pygame
+import pytmx
 
-WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = 640, 640
+
+WINDOW_SIZE = WINDOW_WIDTH, WINDOW_HEIGHT = 672, 608
 FPS = 15
 MAPS_DIR = "maps"
 TILE_SIZE = 32
-ENEMY_EVENT_TYPE = 40
-TIME_TO_SPAWN = 2500
+ENEMY_EVENT_TYPE = 10
+TIME_TO_SPAWN = 5000
 
 
 class Labyrinth:
 
     def __init__(self, filename, free_tiles, finish_tile):
-        self.map = []
-        with open(f"{MAPS_DIR}/{filename}") as input_file:
-            for line in input_file:
-                self.map.append(list(map(int, line.split())))
-        self.height = len(self.map)
-        self.width = len(self.map[0])
-        print(self.height)
-        self.tile_size = TILE_SIZE
+        self.map = pytmx.load_pygame(f'{MAPS_DIR}/{filename}')
+        self.height = self.map.height
+        self.width = self.map.width
+        self.tile_size = self.map.tilewidth
         self.free_tiles = free_tiles
         self.finish_tile = finish_tile
 
     def render(self, screen):
-        colors = {0: (0, 0, 0), 1: (120, 120, 120), 2: (50, 50, 50)}
         for y in range(self.height):
             for x in range(self.width):
-                rect = pygame.Rect(x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size)
-                screen.fill(colors[self.get_tile_id((x, y))], rect)
+                image = self.map.get_tile_image(x, y, 0)
+                screen.blit(image, (x * self.tile_size, y * self.tile_size))
 
     def get_tile_id(self, position):
-        return self.map[position[1]][position[0]]
+        return self.map.tiledgidmap[self.map.get_tile_gid(*position, 0)]
 
     def is_free(self, position):
         return self.get_tile_id(position) in self.free_tiles
@@ -99,8 +96,8 @@ class Game:
         self.labyrinth = labyrinth
         self.hero = hero
         self.enemy_1 = enemy
-        self.enemy_2 = Enemy((1, 18))
-        self.enemy_3 = Enemy((2, 1))
+        self.enemy_2 = Enemy((8, 17))
+        self.enemy_3 = Enemy((11, 17))
 
     def render(self, screen):
         self.labyrinth.render(screen)
@@ -121,6 +118,14 @@ class Game:
             next_y += 1
         if self.labyrinth.is_free((next_x, next_y)):
             self.hero.set_position((next_x, next_y))
+
+    def stop_game(self):
+        if pygame.key.get_pressed()[pygame.K_ESCAPE]:
+            return True
+
+    def return_game(self):
+        if pygame.key.get_pressed()[pygame.K_LEFT]:
+            return True
 
     def move_enemy_1(self):
         next_position = self.labyrinth.find_path_step(self.enemy_1.get_position(), self.hero.get_position())
@@ -165,7 +170,7 @@ def main():
     screen = pygame.display.set_mode(WINDOW_SIZE)
 
     hero = Hero((7, 13))
-    labyrinth = Labyrinth("simple_map.txt", [0, 2], 2)
+    labyrinth = Labyrinth("карта1.tmx", [1, 2], 2)
     enemy = Enemy((13, 1))
     game = Game(labyrinth, hero, enemy)
 
@@ -188,6 +193,10 @@ def main():
             game.update_hero()
         screen.fill((0, 0, 0))
         game.render(screen)
+        if game.stop_game():
+            game_over = True
+        if game_over and game.return_game():
+            game_over = False
         if game.check_win():
             game_over = True
             show_message(screen, 'You won!')
@@ -198,6 +207,8 @@ def main():
         pygame.display.flip()
         clock.tick(FPS)
     pygame.quit()
+
+
 
 
 if __name__ == '__main__':
