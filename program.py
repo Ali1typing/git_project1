@@ -166,7 +166,7 @@ def show_message(screen, message):
 
 def main():
     pygame.init()
-    pygame.display.set_caption('РЕЗНЯ 1')
+    pygame.display.set_caption('Проект')
     screen = pygame.display.set_mode(WINDOW_SIZE)
 
     hero = Hero((7, 13))
